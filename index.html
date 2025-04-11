@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrossFit Timer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: #0f0f0f;
+      color: #f1f1f1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      padding-top: 2rem;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 2rem;
+      color: #00ff99;
+    }
+
+    .menu, .timerApp {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .menu.active, .timerApp.active {
+      display: flex;
+    }
+
+    .mode-button {
+      background-color: #00ff99;
+      color: #000;
+      font-size: 1.5rem;
+      padding: 1rem 2rem;
+      margin: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .mode-button:hover {
+      background-color: #00cc77;
+    }
+
+    #timer {
+      font-size: 6rem;
+      margin: 1rem 0;
+      position: relative;
+      top: 0;
+      z-index: 1;
+      color: #00ff99; /* Grønne tall under trening */
+    }
+
+    #roundInfo {
+      font-size: 1.5rem;
+      color: #cccccc;
+      margin-top: 1rem;
+    }
+
+    .controls {
+      margin: 2rem 0;
+      text-align: center;
+      z-index: 2;
+    }
+
+    button.control {
+      margin: 0.5rem;
+      padding: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #startPauseButton {
+      background-color: #00ff99; /* Grønn */
+    }
+
+    #startPauseButton:hover {
+      background-color: #00cc77;
+    }
+
+    #resetButton, #pauseButton {
+      background-color: #00ff99; /* Grønn */
+    }
+
+    #resetButton:hover, #pauseButton:hover {
+      background-color: #00cc77;
+    }
+
+    #backButton {
+      background-color: #00ff99; /* Grønn */
+    }
+
+    #backButton:hover {
+      background-color: #00cc77;
+    }
+
+    .settings {
+      display: none;
+      text-align: center;
+      margin-top: 2rem;
+      z-index: 2;
+    }
+
+    .input-group {
+      margin: 1rem 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .input-group label {
+      margin-bottom: 0.5rem;
+      font-size: 1.2rem;
+      color: #00ff99;
+      text-transform: uppercase;
+    }
+
+    .input-group input {
+      padding: 0.7rem;
+      font-size: 1.2rem;
+      border-radius: 12px;
+      border: none;
+      width: 140px;
+      text-align: center;
+      background-color: #1a1a1a;
+      color: #00ff99;
+      outline: none;
+    }
+
+    .input-group input::placeholder {
+      color: #888;
+    }
+
+    .input-group button {
+      background-color: #00cc77;
+      color: white;
+      font-size: 1.2rem;
+      margin-top: 1rem;
+      padding: 0.5rem 2rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .input-group button:hover {
+      background-color: #00aa66;
+    }
+
+    audio {
+      display: none;
+    }
+
+    .countdown {
+      color: red; /* Rød farge for nedtelling */
+    }
+
+    /* Responsiv design for mindre skjermer */
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .mode-button {
+        font-size: 1.2rem;
+        padding: 0.8rem 1.5rem;
+      }
+
+      #timer {
+        font-size: 5rem;
+      }
+
+      .controls button {
+        font-size: 1rem;
+        padding: 0.8rem 1.5rem;
+      }
+
+      .input-group input {
+        font-size: 1rem;
+        width: 120px;
+      }
+
+      .input-group label {
+        font-size: 1rem;
+      }
+    }
+
+    /* For enda mindre skjermer (f.eks. telefoner) */
+    @media (max-width: 400px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .mode-button {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+      }
+
+      #timer {
+        font-size: 4rem;
+      }
+
+      .controls button {
+        font-size: 1rem;
+        padding: 0.6rem 1.2rem;
+      }
+
+      .input-group input {
+        font-size: 0.9rem;
+        width: 100px;
+      }
+
+      .input-group label {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="menu active" id="mainMenu">
+    <h1>CrossFit Timer</h1>
+    <button class="mode-button" onclick="selectMode('fortime')">For Time</button>
+    <button class="mode-button" onclick="selectMode('amrap')">AMRAP</button>
+    <button class="mode-button" onclick="selectMode('emom')">EMOM/Tabata</button>
+    <div class="input-group">
+      <label for="countdownTime">Velg nedtellingstid:</label>
+      <input type="number" id="countdownTime" value="10" min="1" placeholder="Sekunder" oninput="updateCountdownTime()">
+    </div>
+  </div>
+
+  <div class="timerApp" id="timerApp">
+    <div id="timer">00:00</div>
+    <div id="roundInfo"></div>
+
+    <div class="settings" id="settingsInputs">
+      <div id="amrapSettings">
+        <div class="input-group">
+          <label for="minutes">Varighet</label>
+          <input type="number" id="minutes" value="15" min="1" placeholder="Minutter" />
+        </div>
+      </div>
+      <div id="emomSettings" style="display: none;">
+        <div class="input-group">
+          <label for="workTime">Arbeid</label>
+          <input type="number" id="workTime" value="40" min="1" placeholder="Sekunder" />
+        </div>
+        <div class="input-group">
+          <label for="restTime">Hvile</label>
+          <input type="number" id="restTime" value="20" min="1" placeholder="Sekunder" />
+        </div>
+        <div class="input-group">
+          <label for="emomRounds">Runder</label>
+          <input type="number" id="emomRounds" value="5" min="1" placeholder="Antall" />
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="control" onclick="toggleStartPause()" id="startPauseButton">Start</button>
+      <button class="control" onclick="resetTimer()" id="resetButton">Reset</button>
+      <button class="control" onclick="goBack()" id="backButton">Tilbake</button>
+    </div>
+  </div>
+
+  <audio id="beep" src="beep.mp3"></audio>
+
+  <script>
+    let currentMode = '';
+    let interval;
+    let startTime;
+    let elapsedTime = 0;
+    let countdown = 10;
+    let roundsLeft = 0;
+    let work = true;
+    let workTime = 0;
+    let restTime = 0;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('timer').innerText = '00:00';
+    });
+
+    function selectMode(mode) {
+      currentMode = mode;
+      document.getElementById('mainMenu').classList.remove('active');
+      document.getElementById('timerApp').classList.add('active');
+      document.getElementById('settingsInputs').style.display = 'flex';
+      document.getElementById('roundInfo').innerText = '';
+      document.getElementById('timer').innerText = '00:00';
+
+      document.getElementById('amrapSettings').style.display = mode === 'amrap' ? 'block' : 'none';
+      document.getElementById('emomSettings').style.display = mode === 'emom' ? 'block' : 'none';
+
+      if (mode === 'fortime') {
+        document.getElementById('settingsInputs').style.display = 'none';
+      }
+    }
+
+    function formatTime(seconds) {
+      const min = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const sec = String(seconds % 60).padStart(2, '0');
+      return `${min}:${sec}`;
+    }
+
+    function toggleStartPause() {
+      const button = document.getElementById('startPauseButton');
+      if (button.innerText === 'Start') {
+        document.getElementById('settingsInputs').style.display = 'none';
+        button.innerText = 'Pause';
+
+        countdown = document.getElementById('countdownTime').value;
+        document.getElementById('timer').innerText = `Starter om: ${countdown}`;
+        document.getElementById('timer').classList.add('countdown');
+        interval = setInterval(() => {
+          countdown--;
+          document.getElementById('timer').innerText = `Starter om: ${countdown}`;
+          if (countdown <= 0) {
+            clearInterval(interval);
+            startTimer();
+          }
+        }, 1000);
+      } else {
+        clearInterval(interval);
+        button.innerText = 'Start';
+        document.getElementById('timer').classList.remove('countdown');
+      }
+    }
+
+    function startTimer() {
+      if (currentMode === 'fortime') {
+        elapsedTime = 0;
+        interval = setInterval(() => {
+          elapsedTime++;
+          document.getElementById('timer').innerText = formatTime(elapsedTime);
+        }, 1000);
+      } else if (currentMode === 'amrap') {
+        let minutes = parseInt(document.getElementById('minutes').value, 10);
+        let totalSeconds = minutes * 60;
+        interval = setInterval(() => {
+          if (totalSeconds <= 0) {
+            clearInterval(interval);
+            return;
+          }
+          totalSeconds--;
+          document.getElementById('timer').innerText = formatTime(totalSeconds);
+        }, 1000);
+      } else if (currentMode === 'emom') {
+        workTime = parseInt(document.getElementById('workTime').value);
+        restTime = parseInt(document.getElementById('restTime').value);
+        roundsLeft = parseInt(document.getElementById('emomRounds').value);
+        work = true;
+        runEmomSegment(workTime);
+      }
+    }
+
+    function runEmomSegment(seconds) {
+      if (roundsLeft <= 0) {
+        document.getElementById('roundInfo').innerText = 'Ferdig!';
+        return;
+      }
+      let timeLeft = seconds;
+      interval = setInterval(() => {
+        document.getElementById('timer').innerText = formatTime(timeLeft);
+        if (timeLeft <= 0) {
+          clearInterval(interval);
+          if (work) {
+            work = false;
+            runEmomSegment(restTime);
+          } else {
+            work = true;
+            roundsLeft--;
+            document.getElementById('roundInfo').innerText = `${roundsLeft} runder igjen`;
+            runEmomSegment(workTime);
+          }
+        } else {
+          timeLeft--;
+        }
+      }, 1000);
+    }
+
+    function resetTimer() {
+      clearInterval(interval);
+      document.getElementById('timer').innerText = '00:00';
+      document.getElementById('startPauseButton').innerText = 'Start';
+      roundsLeft = 0;
+      work = true;
+      document.getElementById('roundInfo').innerText = '';
+      document.getElementById('settingsInputs').style.display = 'flex';
+      document.getElementById('timer').classList.remove('countdown');
+    }
+
+    function goBack() {
+      clearInterval(interval);
+      document.getElementById('timerApp').classList.remove('active');
+      document.getElementById('mainMenu').classList.add('active');
+      document.getElementById('timer').innerText = '00:00';
+      document.getElementById('startPauseButton').innerText = 'Start';
+    }
+  </script>
+</body>
+</html>
