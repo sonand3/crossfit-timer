@@ -58,7 +58,6 @@
       position: relative;
       top: 0;
       z-index: 1;
-      color: #00ff99; /* Grønne tall under trening */
     }
 
     #roundInfo {
@@ -77,32 +76,14 @@
       margin: 0.5rem;
       padding: 10px;
       font-size: 1rem;
+      background-color: #00ff99;
+      color: #000;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
 
-    #startPauseButton {
-      background-color: #00ff99; /* Grønn */
-    }
-
-    #startPauseButton:hover {
-      background-color: #00cc77;
-    }
-
-    #resetButton, #pauseButton {
-      background-color: #00ff99; /* Grønn */
-    }
-
-    #resetButton:hover, #pauseButton:hover {
-      background-color: #00cc77;
-    }
-
-    #backButton {
-      background-color: #00ff99; /* Grønn */
-    }
-
-    #backButton:hover {
+    button.control:hover {
       background-color: #00cc77;
     }
 
@@ -143,87 +124,17 @@
       color: #888;
     }
 
-    .input-group button {
-      background-color: #00cc77;
-      color: white;
-      font-size: 1.2rem;
-      margin-top: 1rem;
-      padding: 0.5rem 2rem;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-
-    .input-group button:hover {
-      background-color: #00aa66;
-    }
-
     audio {
       display: none;
     }
 
-    .countdown {
-      color: red; /* Rød farge for nedtelling */
-    }
-
-    /* Responsiv design for mindre skjermer */
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 2rem;
-      }
-
-      .mode-button {
-        font-size: 1.2rem;
-        padding: 0.8rem 1.5rem;
-      }
-
-      #timer {
-        font-size: 5rem;
-      }
-
-      .controls button {
-        font-size: 1rem;
-        padding: 0.8rem 1.5rem;
-      }
-
-      .input-group input {
-        font-size: 1rem;
-        width: 120px;
-      }
-
-      .input-group label {
-        font-size: 1rem;
-      }
-    }
-
-    /* For enda mindre skjermer (f.eks. telefoner) */
-    @media (max-width: 400px) {
-      h1 {
-        font-size: 1.5rem;
-      }
-
-      .mode-button {
-        font-size: 1rem;
-        padding: 0.5rem 1rem;
-      }
-
-      #timer {
-        font-size: 4rem;
-      }
-
-      .controls button {
-        font-size: 1rem;
-        padding: 0.6rem 1.2rem;
-      }
-
-      .input-group input {
-        font-size: 0.9rem;
-        width: 100px;
-      }
-
-      .input-group label {
-        font-size: 0.9rem;
-      }
+    /* Screen always on */
+    .noSleep {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 100%;
     }
   </style>
 </head>
@@ -233,10 +144,6 @@
     <button class="mode-button" onclick="selectMode('fortime')">For Time</button>
     <button class="mode-button" onclick="selectMode('amrap')">AMRAP</button>
     <button class="mode-button" onclick="selectMode('emom')">EMOM/Tabata</button>
-    <div class="input-group">
-      <label for="countdownTime">Velg nedtellingstid:</label>
-      <input type="number" id="countdownTime" value="10" min="1" placeholder="Sekunder" oninput="updateCountdownTime()">
-    </div>
   </div>
 
   <div class="timerApp" id="timerApp">
@@ -268,12 +175,12 @@
 
     <div class="controls">
       <button class="control" onclick="toggleStartPause()" id="startPauseButton">Start</button>
-      <button class="control" onclick="resetTimer()" id="resetButton">Reset</button>
-      <button class="control" onclick="goBack()" id="backButton">Tilbake</button>
+      <button class="control" onclick="resetTimer()">Reset</button>
+      <button class="control" onclick="goBack()">Tilbake</button>
     </div>
   </div>
 
-  <audio id="beep" src="beep.mp3"></audio>
+  <audio id="beep" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
 
   <script>
     let currentMode = '';
@@ -286,9 +193,23 @@
     let workTime = 0;
     let restTime = 0;
 
-    document.addEventListener('DOMContentLoaded', function () {
-      document.getElementById('timer').innerText = '00:00';
+    // Wake lock to keep screen on
+    let wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+      } catch (err) {
+        console.log('Wake lock request failed:', err);
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
     });
+
+    requestWakeLock();
 
     function selectMode(mode) {
       currentMode = mode;
@@ -307,9 +228,7 @@
     }
 
     function formatTime(seconds) {
-      const min = String(Math.floor(seconds / 60)).padStart(2, '0');
-      const sec = String(seconds % 60).padStart(2, '0');
-      return `${min}:${sec}`;
+      return String(seconds).padStart(2, '0');
     }
 
     function toggleStartPause() {
@@ -318,12 +237,11 @@
         document.getElementById('settingsInputs').style.display = 'none';
         button.innerText = 'Pause';
 
-        countdown = document.getElementById('countdownTime').value;
-        document.getElementById('timer').innerText = `Starter om: ${countdown}`;
-        document.getElementById('timer').classList.add('countdown');
+        countdown = 10;
+        document.getElementById('timer').innerText = formatTime(countdown);
         interval = setInterval(() => {
           countdown--;
-          document.getElementById('timer').innerText = `Starter om: ${countdown}`;
+          document.getElementById('timer').innerText = formatTime(countdown);
           if (countdown <= 0) {
             clearInterval(interval);
             startTimer();
@@ -332,7 +250,6 @@
       } else {
         clearInterval(interval);
         button.innerText = 'Start';
-        document.getElementById('timer').classList.remove('countdown');
       }
     }
 
@@ -359,52 +276,48 @@
         restTime = parseInt(document.getElementById('restTime').value);
         roundsLeft = parseInt(document.getElementById('emomRounds').value);
         work = true;
-        runEmomSegment(workTime);
-      }
-    }
+        countdown = workTime;
+        interval = setInterval(() => {
+          countdown--;
+          document.getElementById('timer').innerText = formatTime(countdown);
 
-    function runEmomSegment(seconds) {
-      if (roundsLeft <= 0) {
-        document.getElementById('roundInfo').innerText = 'Ferdig!';
-        return;
-      }
-      let timeLeft = seconds;
-      interval = setInterval(() => {
-        document.getElementById('timer').innerText = formatTime(timeLeft);
-        if (timeLeft <= 0) {
-          clearInterval(interval);
-          if (work) {
-            work = false;
-            runEmomSegment(restTime);
-          } else {
-            work = true;
-            roundsLeft--;
-            document.getElementById('roundInfo').innerText = `${roundsLeft} runder igjen`;
-            runEmomSegment(workTime);
+          if (countdown <= 0) {
+            beep();
+            if (work) {
+              work = false;
+              countdown = restTime;
+              document.getElementById('timer').style.color = 'red';
+            } else {
+              roundsLeft--;
+              if (roundsLeft === 0) {
+                clearInterval(interval);
+                beep();
+              } else {
+                work = true;
+                countdown = workTime;
+                document.getElementById('timer').style.color = 'green';
+              }
+            }
           }
-        } else {
-          timeLeft--;
-        }
-      }, 1000);
+        }, 1000);
+      }
     }
 
     function resetTimer() {
       clearInterval(interval);
       document.getElementById('timer').innerText = '00:00';
-      document.getElementById('startPauseButton').innerText = 'Start';
-      roundsLeft = 0;
-      work = true;
       document.getElementById('roundInfo').innerText = '';
-      document.getElementById('settingsInputs').style.display = 'flex';
-      document.getElementById('timer').classList.remove('countdown');
+      document.getElementById('startPauseButton').innerText = 'Start';
     }
 
     function goBack() {
-      clearInterval(interval);
-      document.getElementById('timerApp').classList.remove('active');
       document.getElementById('mainMenu').classList.add('active');
-      document.getElementById('timer').innerText = '00:00';
-      document.getElementById('startPauseButton').innerText = 'Start';
+      document.getElementById('timerApp').classList.remove('active');
+      resetTimer();
+    }
+
+    function beep() {
+      document.getElementById('beep').play();
     }
   </script>
 </body>
