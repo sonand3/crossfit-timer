@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrossFit Timer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: #0f0f0f;
+      color: #f1f1f1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      padding-top: 2rem;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 2rem;
+      color: #00ff99;
+    }
+
+    .menu, .timerApp {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .menu.active, .timerApp.active {
+      display: flex;
+    }
+
+    .mode-button {
+      background-color: #00ff99;
+      color: #000;
+      font-size: 1.5rem;
+      padding: 1rem 2rem;
+      margin: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .mode-button:hover {
+      background-color: #00cc77;
+    }
+
+    #timer {
+      font-size: 6rem;
+      margin: 1rem 0;
+      position: relative;
+      top: 0;
+      z-index: 1;
+      color: red;
+    }
+
+    #workoutClock {
+      font-size: 8rem; /* Økt størrelse på treningsklokken */
+      margin: 1rem 0;
+      color: #00ff99;
+      display: none; /* Skjuler treningsklokken først */
+    }
+
+    #roundInfo {
+      font-size: 1.5rem;
+      color: #cccccc;
+      margin-top: 1rem;
+    }
+
+    .controls {
+      margin: 2rem 0;
+      text-align: center;
+      z-index: 2;
+    }
+
+    button.control {
+      margin: 0.5rem;
+      padding: 10px;
+      font-size: 1rem;
+      background-color: #00ff99;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button.control:hover {
+      background-color: #00cc77;
+    }
+
+    .settings {
+      text-align: center;
+      margin-top: 2rem;
+      z-index: 2;
+    }
+
+    .input-group {
+      margin: 1rem 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .input-group label {
+      margin-bottom: 0.5rem;
+      font-size: 1.2rem;
+      color: #00ff99;
+      text-transform: uppercase;
+    }
+
+    .input-group input {
+      padding: 0.7rem;
+      font-size: 1.2rem;
+      border-radius: 12px;
+      border: none;
+      width: 140px;
+      text-align: center;
+      background-color: #1a1a1a;
+      color: #00ff99;
+      outline: none;
+    }
+
+    .input-group input::placeholder {
+      color: #888;
+    }
+
+    audio {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="menu active" id="mainMenu">
+    <h1>CrossFit Timer</h1>
+    <div class="input-group">
+      <label for="countdownInput">Nedtelling (sekunder)</label>
+      <input type="number" id="countdownInput" value="10" min="1" placeholder="10" />
+    </div>
+    <button class="mode-button" onclick="selectMode('fortime')">For Time</button>
+    <button class="mode-button" onclick="selectMode('amrap')">AMRAP</button>
+    <button class="mode-button" onclick="selectMode('emom')">EMOM/Tabata</button>
+  </div>
+
+  <div class="timerApp" id="timerApp">
+    <div id="timer">00:00</div>
+    <div id="workoutClock"></div>
+    <div id="roundInfo"></div>
+
+    <div class="settings" id="settingsInputs">
+      <div id="amrapSettings">
+        <div class="input-group">
+          <label for="minutes">Varighet</label>
+          <input type="number" id="minutes" value="15" min="1" placeholder="Minutter" />
+        </div>
+      </div>
+      <div id="emomSettings" style="display: none;">
+        <div class="input-group">
+          <label for="workTime">Arbeid</label>
+          <input type="number" id="workTime" value="40" min="1" placeholder="Sekunder" />
+        </div>
+        <div class="input-group">
+          <label for="restTime">Hvile</label>
+          <input type="number" id="restTime" value="20" min="1" placeholder="Sekunder" />
+        </div>
+        <div class="input-group">
+          <label for="emomRounds">Runder</label>
+          <input type="number" id="emomRounds" value="5" min="1" placeholder="Antall" />
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="control" onclick="toggleStartPause()" id="startPauseButton">Start</button>
+      <button class="control" onclick="resetTimer()">Reset</button>
+      <button class="control" onclick="goBack()">Tilbake</button>
+    </div>
+  </div>
+
+  <audio id="beep" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
+  <audio id="finishBeep" src="https://www.soundjay.com/button/beep-08b.mp3"></audio>
+
+  <script>
+    let currentMode = '';
+    let interval;
+    let workoutInterval;
+    let countdown = 10;
+    let isPaused = false;
+    let workoutSeconds = 0;
+
+    function selectMode(mode) {
+      currentMode = mode;
+      document.getElementById('mainMenu').classList.remove('active');
+      document.getElementById('timerApp').classList.add('active');
+      document.getElementById('timer').innerText = '00:00';
+      document.getElementById('timer').style.color = 'red';
+      document.getElementById('workoutClock').innerText = '';
+
+      document.getElementById('settingsInputs').style.display = 'flex';
+      document.getElementById('amrapSettings').style.display = mode === 'amrap' ? 'block' : 'none';
+      document.getElementById('emomSettings').style.display = mode === 'emom' ? 'block' : 'none';
+      if (mode === 'fortime') {
+        document.getElementById('settingsInputs').style.display = 'none';
+      }
+    }
+
+    function formatTime(seconds) {
+      const hrs = Math.floor(seconds / 3600);
+      const min = Math.floor((seconds % 3600) / 60);
+      const sec = seconds % 60;
+      return hrs > 0
+        ? `${String(hrs).padStart(2, '0')}:${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+        : `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    }
+
+    function toggleStartPause() {
+      const button = document.getElementById('startPauseButton');
+
+      if (button.innerText === 'Start' || button.innerText === 'Fortsett') {
+        isPaused = false;
+        button.innerText = 'Pause';
+        countdown = parseInt(document.getElementById('countdownInput').value) || 10;
+        document.getElementById('timer').style.color = 'red';
+        document.getElementById('timer').innerText = formatTime(countdown);
+
+        interval = setInterval(() => {
+          if (!isPaused) {
+            countdown--;
+            document.getElementById('timer').innerText = formatTime(countdown);
+            if (countdown <= 0) {
+              clearInterval(interval);
+              document.getElementById('beep').play();
+              startTimer();
+            }
+          }
+        }, 1000);
+
+      } else if (button.innerText === 'Pause') {
+        isPaused = true;
+        clearInterval(interval);
+        clearInterval(workoutInterval);
+        button.innerText = 'Fortsett';
+      }
+    }
+
+    function startTimer() {
+      // Fjern "GO!" og vis treningsklokke
+      document.getElementById('timer').style.display = 'none'; // Skjuler nedtellingen
+      document.getElementById('workoutClock').style.display = 'block'; // Vist treningsklokke
+      document.getElementById('workoutClock').style.fontSize = '10rem'; // Økt størrelse på treningsklokken
+      workoutSeconds = 0;
+      document.getElementById('workoutClock').innerText = formatTime(workoutSeconds); // Starter treningsklokke
+
+      // Spill av lyd når nedtellingen er ferdig
+      document.getElementById('finishBeep').play();
+
+      if (currentMode === 'fortime') {
+        startWorkoutClock(); // Starter treningsklokke som teller opp
+      } else if (currentMode === 'amrap') {
+        // AMRAP: Teller ned fra valgt tid
+        const minutes = parseInt(document.getElementById('minutes').value) || 15;
+        let totalSeconds = minutes * 60;
+        workoutSeconds = totalSeconds;
+        document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
+
+        workoutInterval = setInterval(() => {
+          if (!isPaused) {
+            workoutSeconds--;
+            document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
+            if (workoutSeconds <= 0) {
+              clearInterval(workoutInterval);
+              document.getElementById('finishBeep').play(); // Spiller av lyd når AMRAP er ferdig
+            }
+          }
+        }, 1000);
+      } else if (currentMode === 'emom') {
+        // EMOM: Veksler mellom arbeid og hvile, med rundinfo
+        const workTime = parseInt(document.getElementById('workTime').value) || 40;
+        const restTime = parseInt(document.getElementById('restTime').value) || 20;
+        const rounds = parseInt(document.getElementById('emomRounds').value) || 5;
+        let currentRound = 1;
+        let timeLeft = workTime;
+        let isWork = true;
+
+        document.getElementById('roundInfo').innerText = `Runde: ${currentRound} / ${rounds}`;
+        document.getElementById('workoutClock').innerText = formatTime(timeLeft);
+
+        workoutInterval = setInterval(() => {
+          if (!isPaused) {
+            timeLeft--;
+            document.getElementById('workoutClock').innerText = formatTime(timeLeft);
+
+            if (timeLeft <= 0) {
+              if (isWork) {
+                timeLeft = restTime;
+                isWork = false;
+                document.getElementById('timer').innerText = 'Hvile';
+              } else {
+                currentRound++;
+                if (currentRound > rounds) {
+                  clearInterval(workoutInterval);
+                  document.getElementById('finishBeep').play();
+                  document.getElementById('timer').innerText = 'Ferdig!';
+                  return;
+                }
+                timeLeft = workTime;
+                isWork = true;
+                document.getElementById('timer').innerText = 'GO!';
+              }
+              document.getElementById('roundInfo').innerText = `Runde: ${currentRound} / ${rounds}`;
+            }
+          }
+        }, 1000);
+      }
+    }
+
+    function startWorkoutClock() {
+      workoutSeconds = 0;
+      document.getElementById('workoutClock').innerText = formatTime(workoutSeconds); // Vist treningsklokke
+
+      // Treningsklokke som starter og teller opp
+      workoutInterval = setInterval(() => {
+        if (!isPaused) {
+          workoutSeconds++;
+          document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
+        }
+      }, 1000);
+    }
+
+    function resetTimer() {
+      clearInterval(interval);
+      clearInterval(workoutInterval);
+      isPaused = false;
+      workoutSeconds = 0;
+      document.getElementById('timer').innerText = '00:00';
+      document.getElementById('workoutClock').innerText = '';  // Skjuler treningsklokken ved reset
+      document.getElementById('timer').style.color = 'red';
+      document.getElementById('startPauseButton').innerText = 'Start';
+    }
+
+    function goBack() {
+      document.getElementById('timerApp').classList.remove('active');
+      document.getElementById('mainMenu').classList.add('active');
+    }
+  </script>
+</body>
+</html>
