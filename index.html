@@ -62,10 +62,10 @@
     }
 
     #workoutClock {
-      font-size: 8rem; /* Økt størrelse på treningsklokken */
+      font-size: 8rem;
       margin: 1rem 0;
       color: #00ff99;
-      display: none; /* Skjuler treningsklokken først */
+      display: none;
     }
 
     #roundInfo {
@@ -250,20 +250,17 @@
     }
 
     function startTimer() {
-      // Fjern "GO!" og vis treningsklokke
       document.getElementById('timer').style.display = 'none'; // Skjuler nedtellingen
       document.getElementById('workoutClock').style.display = 'block'; // Vist treningsklokke
       document.getElementById('workoutClock').style.fontSize = '10rem'; // Økt størrelse på treningsklokken
       workoutSeconds = 0;
       document.getElementById('workoutClock').innerText = formatTime(workoutSeconds); // Starter treningsklokke
 
-      // Spill av lyd når nedtellingen er ferdig
       document.getElementById('finishBeep').play();
 
       if (currentMode === 'fortime') {
-        startWorkoutClock(); // Starter treningsklokke som teller opp
+        startWorkoutClock();
       } else if (currentMode === 'amrap') {
-        // AMRAP: Teller ned fra valgt tid
         const minutes = parseInt(document.getElementById('minutes').value) || 15;
         let totalSeconds = minutes * 60;
         workoutSeconds = totalSeconds;
@@ -275,12 +272,11 @@
             document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
             if (workoutSeconds <= 0) {
               clearInterval(workoutInterval);
-              document.getElementById('finishBeep').play(); // Spiller av lyd når AMRAP er ferdig
+              document.getElementById('finishBeep').play();
             }
           }
         }, 1000);
       } else if (currentMode === 'emom') {
-        // EMOM: Veksler mellom arbeid og hvile, med rundinfo
         const workTime = parseInt(document.getElementById('workTime').value) || 40;
         const restTime = parseInt(document.getElementById('restTime').value) || 20;
         const rounds = parseInt(document.getElementById('emomRounds').value) || 5;
@@ -326,9 +322,9 @@
       isPaused = false;
       workoutSeconds = 0;
       document.getElementById('timer').innerText = '00:00';
-      document.getElementById('workoutClock').innerText = '';  // Skjuler treningsklokken ved reset
+      document.getElementById('workoutClock').innerText = ''; 
       document.getElementById('timer').style.color = 'red';
-      document.getElementById('timer').style.display = 'block';  // Vist igjen når reset
+      document.getElementById('timer').style.display = 'block';  // Vis nedtellingsklokken igjen
       document.getElementById('workoutClock').style.display = 'none'; // Skjul treningsklokken
       document.getElementById('startPauseButton').innerText = 'Start';
     }
