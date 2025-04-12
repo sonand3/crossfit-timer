@@ -224,6 +224,27 @@
     let countdown = 10;
     let isPaused = false;
     let workoutSeconds = 0;
+    let wakeLock = null;
+
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => {
+            console.log('Screen Wake Lock released');
+          });
+        }
+      } catch (err) {
+        console.error('Failed to acquire wake lock', err);
+      }
+    }
+
+    function releaseWakeLock() {
+      if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
+      }
+    }
 
     function selectMode(mode) {
       currentMode = mode;
@@ -268,6 +289,7 @@
               clearInterval(interval);
               document.getElementById('beep').play();
               startTimer();
+              requestWakeLock(); // Activating screen wake lock
             }
           }
         }, 1000);
@@ -277,6 +299,7 @@
         button.innerText = 'Fortsett';
         clearInterval(interval);
         clearInterval(workoutInterval);
+        releaseWakeLock(); // Release wake lock when paused
       }
     }
 
@@ -363,9 +386,11 @@
     }
 
     function goBack() {
+      clearInterval(interval);
+      clearInterval(workoutInterval);
       document.getElementById('mainMenu').classList.add('active');
       document.getElementById('timerApp').classList.remove('active');
-      resetTimer();
+      releaseWakeLock(); // Release the wake lock
     }
   </script>
 </body>
