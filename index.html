@@ -243,9 +243,9 @@
 
       } else if (button.innerText === 'Pause') {
         isPaused = true;
+        button.innerText = 'Fortsett';
         clearInterval(interval);
         clearInterval(workoutInterval);
-        button.innerText = 'Fortsett';
       }
     }
 
