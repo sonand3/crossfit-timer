@@ -224,26 +224,19 @@
     let countdown = 10;
     let isPaused = false;
     let workoutSeconds = 0;
-    let wakeLock = null;
 
-    async function requestWakeLock() {
-      try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen');
-          wakeLock.addEventListener('release', () => {
-            console.log('Screen Wake Lock released');
-          });
-        }
-      } catch (err) {
-        console.error('Failed to acquire wake lock', err);
-      }
+    let activityInterval;
+
+    // Simulerer aktivitet for å holde skjermen aktiv
+    function simulateActivity() {
+      activityInterval = setInterval(() => {
+        document.getElementById('timer').innerText = document.getElementById('timer').innerText;
+      }, 1000); // Oppdaterer hvert sekund for å simulere aktivitet
     }
 
-    function releaseWakeLock() {
-      if (wakeLock !== null) {
-        wakeLock.release();
-        wakeLock = null;
-      }
+    // Stoppe simuleringen av aktivitet
+    function stopSimulatingActivity() {
+      clearInterval(activityInterval);
     }
 
     function selectMode(mode) {
@@ -289,17 +282,17 @@
               clearInterval(interval);
               document.getElementById('beep').play();
               startTimer();
-              requestWakeLock(); // Activating screen wake lock
             }
           }
         }, 1000);
 
+        simulateActivity(); // Start simulering av aktivitet
       } else if (button.innerText === 'Pause') {
         isPaused = true;
         button.innerText = 'Fortsett';
         clearInterval(interval);
         clearInterval(workoutInterval);
-        releaseWakeLock(); // Release wake lock when paused
+        stopSimulatingActivity(); // Stopp simuleringen av aktivitet
       }
     }
 
@@ -383,15 +376,17 @@
       document.getElementById('timer').style.display = 'block';  // Vis nedtellingsklokken igjen
       document.getElementById('workoutClock').style.display = 'none'; // Skjul treningsklokken
       document.getElementById('startPauseButton').innerText = 'Start';
+      stopSimulatingActivity(); // Stopp simuleringen av aktivitet
     }
 
     function goBack() {
+      document.getElementById('timerApp').classList.remove('active');
+      document.getElementById('mainMenu').classList.add('active');
       clearInterval(interval);
       clearInterval(workoutInterval);
-      document.getElementById('mainMenu').classList.add('active');
-      document.getElementById('timerApp').classList.remove('active');
-      releaseWakeLock(); // Release the wake lock
+      stopSimulatingActivity(); // Stoppe aktivitetssimuleringen når vi går tilbake
     }
   </script>
 </body>
 </html>
+
