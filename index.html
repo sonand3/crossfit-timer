@@ -63,7 +63,7 @@
     }
 
     #workoutClock {
-      font-size: 8rem;
+      font-size: 6rem;
       margin: 1rem 0;
       color: #00ff99;
       display: none;
@@ -282,11 +282,8 @@
     function startTimer() {
       document.getElementById('timer').style.display = 'none'; // Skjuler nedtellingen
       document.getElementById('workoutClock').style.display = 'block'; // Vist treningsklokke
-      document.getElementById('workoutClock').style.fontSize = '10rem'; // Økt størrelse på treningsklokken
       workoutSeconds = 0;
       document.getElementById('workoutClock').innerText = formatTime(workoutSeconds); // Starter treningsklokke
-
-      document.getElementById('finishBeep').play();
 
       if (currentMode === 'fortime') {
         workoutInterval = setInterval(() => {
