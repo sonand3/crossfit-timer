@@ -289,7 +289,12 @@
       document.getElementById('finishBeep').play();
 
       if (currentMode === 'fortime') {
-        startWorkoutClock();
+        workoutInterval = setInterval(() => {
+          if (!isPaused) {
+            workoutSeconds++;
+            document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
+          }
+        }, 1000);
       } else if (currentMode === 'amrap') {
         const minutes = parseInt(document.getElementById('minutes').value) || 15;
         let totalSeconds = minutes * 60;
