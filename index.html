@@ -216,7 +216,10 @@
 
   <audio id="beep" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
   <audio id="finishBeep" src="https://www.soundjay.com/button/beep-08b.mp3"></audio>
-
+<!-- iOS Wake Lock workaround: skjult video -->
+<video id="wakelockVideo" playsinline muted loop style="display: none;">
+  <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+</video>
   <script>
     let currentMode = '';
     let interval;
@@ -230,15 +233,33 @@
 
     // Function to request screen wake lock
     async function requestWakeLock() {
-      try {
-        if ('wakeLock' in navigator) {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log("Wake Lock aktivert med API");
+      wakeLock.addEventListener('release', () => {
+        console.log('Wake Lock sluppet');
+      });
+      document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
           wakeLock = await navigator.wakeLock.request('screen');
-          console.log("Wake lock acquired!");
         }
-      } catch (err) {
-        console.error("Failed to acquire wake lock:", err);
+      });
+    } else {
+      console.log("Wake Lock API ikke støttet, prøver iOS workaround");
+      const video = document.getElementById('wakelockVideo');
+      if (video) {
+        video.play().then(() => {
+          console.log("iOS workaround aktivert med video");
+        }).catch(err => {
+          console.error("Kunne ikke starte video:", err);
+        });
       }
     }
+  } catch (err) {
+    console.error(`${err.name}, ${err.message}`);
+  }
+}
 
     // Function to release screen wake lock
     async function releaseWakeLock() {
