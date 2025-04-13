@@ -176,7 +176,7 @@
     </div>
     <button class="mode-button" onclick="selectMode('fortime')">For Time</button>
     <button class="mode-button" onclick="selectMode('amrap')">AMRAP</button>
-    <button class="mode-button" onclick="selectMode('emom')">EMOM/Tabata</button>
+    <button class="mode-button" onclick="selectMode('emom')">EMOM</button>
   </div>
 
   <div class="timerApp" id="timerApp">
@@ -229,6 +229,10 @@
     let isPaused = false;
     let workoutSeconds = 0;
     let wakeLock = null;
+    let emomRounds = 5;
+    let emomWorkTime = 40;
+    let emomRestTime = 20;
+    let emomRoundCounter = 0;
 
     async function requestWakeLock() {
       try {
@@ -268,7 +272,6 @@
         document.getElementById('settingsInputs').style.display = 'none';
       }
 
-      // iOS video workaround starter her
       const video = document.getElementById('wakelockVideo');
       if (video) {
         video.play().then(() => {
@@ -291,9 +294,7 @@
     function toggleStartPause() {
       const button = document.getElementById('startPauseButton');
 
-      // Aktivere wake lock ved start
       if (button.innerText === 'Start' || button.innerText === 'Fortsett') {
-        // Første gang vi starter, ber om wake lock
         requestWakeLock();
 
         isPaused = false;
@@ -314,7 +315,11 @@
             if (countdown <= 0) {
               clearInterval(interval);
               document.getElementById('beep').play();
-              startAMRAPTimer(); // Start AMRAP etter nedtelling
+              if (currentMode === 'amrap') {
+                startAMRAPTimer();
+              } else if (currentMode === 'emom') {
+                startEMOMTimer();
+              }
             }
           }
         }, 1000);
@@ -340,7 +345,7 @@
 
     function startAMRAPTimer() {
       let amrapMinutes = parseInt(document.getElementById('minutes').value) || 15;
-      let amrapDuration = amrapMinutes * 60; // Convert to seconds
+      let amrapDuration = amrapMinutes * 60;
       workoutSeconds = 0;
       document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
 
@@ -356,6 +361,48 @@
           }
         }
       }, 1000);
+    }
+
+    function startEMOMTimer() {
+      emomRounds = parseInt(document.getElementById('emomRounds').value) || 5;
+      emomWorkTime = parseInt(document.getElementById('workTime').value) || 40;
+      emomRestTime = parseInt(document.getElementById('restTime').value) || 20;
+      emomRoundCounter = 0;
+
+      function emomCycle() {
+        if (emomRoundCounter < emomRounds) {
+          // Arbeidstid
+          let workTimeLeft = emomWorkTime;
+          document.getElementById('workoutClock').innerText = formatTime(workTimeLeft);
+          
+          let workInterval = setInterval(() => {
+            workTimeLeft--;
+            document.getElementById('workoutClock').innerText = formatTime(workTimeLeft);
+            if (workTimeLeft <= 0) {
+              clearInterval(workInterval);
+              document.getElementById('beep').play();
+              // Hviletid
+              let restTimeLeft = emomRestTime;
+              let restInterval = setInterval(() => {
+                restTimeLeft--;
+                document.getElementById('workoutClock').innerText = formatTime(restTimeLeft);
+                if (restTimeLeft <= 0) {
+                  clearInterval(restInterval);
+                  emomRoundCounter++;
+                  if (emomRoundCounter >= emomRounds) {
+                    document.getElementById('workoutClock').innerText = 'EMOM Done!';
+                    document.getElementById('end').play();
+                    return;
+                  }
+                  emomCycle(); // Start neste runde
+                }
+              }, 1000);
+            }
+          }, 1000);
+        }
+      }
+
+      emomCycle();
     }
   </script>
 </body>
