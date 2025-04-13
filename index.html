@@ -392,7 +392,8 @@ function startTimer() {
 
         // Spill lyd på de siste 3 sekundene før overgang mellom arbeid og hvile
         if (timeLeft <= 3 && timeLeft > 0) {
-  playBeep(); // Spill av beep-lyd før overgang til hvile eller arbeid i EMOM
+  document.getElementById('beep').play(); // Spill av beep-lyd før overgang til hvile eller arbeid i EMOM
+
 }
 
 
@@ -405,7 +406,7 @@ function startTimer() {
             currentRound++;
             if (currentRound > rounds) {
               clearInterval(workoutInterval);
-              document.getElementById('finishBeep').play();  // Spill ferdig-lyd her
+             document.getElementById('end').play(); // Spill ferdig-lyd her
               document.getElementById('timer').innerText = 'Ferdig!';
               return;
             }
