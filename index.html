@@ -232,52 +232,55 @@
     let workoutSeconds = 0;
 
     // Hold the screen on
-    let wakeLock = null;
+<script>
+  let wakeLock = null;
 
-    // Function to request screen wake lock
-    async function requestWakeLock() {
-  try {
-    if ('wakeLock' in navigator) {
-      wakeLock = await navigator.wakeLock.request('screen');
-      console.log("Wake Lock aktivert med API");
-      wakeLock.addEventListener('release', () => {
-        console.log('Wake Lock sluppet');
-      });
-      document.addEventListener('visibilitychange', async () => {
-        if (wakeLock !== null && document.visibilityState === 'visible') {
-          wakeLock = await navigator.wakeLock.request('screen');
-        }
-      });
-    } else {
-      console.log("Wake Lock API ikke støttet, prøver iOS workaround");
-      const video = document.getElementById('wakelockVideo');
-      if (video) {
-        video.play().then(() => {
-          console.log("iOS workaround aktivert med video");
-        }).catch(err => {
-          console.error("Kunne ikke starte video:", err);
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log("Wake Lock aktivert med API");
+        wakeLock.addEventListener('release', () => {
+          console.log('Wake Lock sluppet');
         });
+        document.addEventListener('visibilitychange', async () => {
+          if (wakeLock !== null && document.visibilityState === 'visible') {
+            wakeLock = await navigator.wakeLock.request('screen');
+          }
+        });
+      } else {
+        console.log("Wake Lock API ikke støttet, prøver iOS workaround");
+        const video = document.getElementById('wakelockVideo');
+        if (video) {
+          video.play().then(() => {
+            console.log("iOS workaround aktivert med video");
+          }).catch(err => {
+            console.error("Kunne ikke starte video:", err);
+          });
+        }
       }
+    } catch (err) {
+      console.error(`${err.name}, ${err.message}`);
     }
-  } catch (err) {
-    console.error(`${err.name}, ${err.message}`);
   }
-}
 
-    // Function to release screen wake lock
-    async function releaseWakeLock() {
-      if (wakeLock) {
-        await wakeLock.release();
-        wakeLock = null;
-        console.log("Wake lock released!");
-      }
-    }
+  window.onload = function() {
+    requestWakeLock();  // Be om Wake Lock
+    var wakelockVideo = document.getElementById('wakelockVideo');
+    
+    // Spill videoen for å unngå at skjermen slås av på iOS
+    wakelockVideo.play().catch(function(error) {
+      console.error("Kunne ikke starte videoen:", error);
+    });
+  };
 
-    // Call requestWakeLock when the page is loaded
-    window.onload = requestWakeLock;
-
-    // Ensure the wake lock is released on page unload
-    window.onunload = releaseWakeLock;
+  document.getElementById('wakelockVideo').addEventListener('canplaythrough', function() {
+    var wakelockVideo = document.getElementById('wakelockVideo');
+    wakelockVideo.play().catch(function(error) {
+      console.error("Kunne ikke starte videoen:", error);
+    });
+  });
+</script>
 
     function selectMode(mode) {
       currentMode = mode;
