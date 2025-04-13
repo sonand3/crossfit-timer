@@ -314,49 +314,48 @@
             if (countdown <= 0) {
               clearInterval(interval);
               document.getElementById('beep').play();
-              startTimer();
+              startAMRAPTimer(); // Start AMRAP etter nedtelling
             }
           }
         }, 1000);
-      } else if (button.innerText === 'Pause') {
+      } else {
         isPaused = true;
         button.innerText = 'Fortsett';
-        clearInterval(interval);
-        clearInterval(workoutInterval);
-      }
-    }
-
-    function startTimer() {
-      document.getElementById('timer').style.display = 'none';
-      document.getElementById('workoutClock').style.display = 'block';
-      workoutSeconds = 0;
-      document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
-
-      if (currentMode === 'fortime') {
-        workoutInterval = setInterval(() => {
-          if (!isPaused) {
-            workoutSeconds++;
-            document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
-          }
-        }, 1000);
       }
     }
 
     function resetTimer() {
-      isPaused = true;
       clearInterval(interval);
       clearInterval(workoutInterval);
-      document.getElementById('timer').style.color = 'red';
       document.getElementById('timer').innerText = '00:00';
       document.getElementById('workoutClock').innerText = '';
-      document.getElementById('workoutClock').style.display = 'none';
-      document.getElementById('timer').style.display = 'block';
+      isPaused = false;
       document.getElementById('startPauseButton').innerText = 'Start';
     }
 
     function goBack() {
       document.getElementById('timerApp').classList.remove('active');
       document.getElementById('mainMenu').classList.add('active');
+    }
+
+    function startAMRAPTimer() {
+      let amrapMinutes = parseInt(document.getElementById('minutes').value) || 15;
+      let amrapDuration = amrapMinutes * 60; // Convert to seconds
+      workoutSeconds = 0;
+      document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
+
+      workoutInterval = setInterval(() => {
+        if (!isPaused) {
+          workoutSeconds++;
+          document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
+
+          if (workoutSeconds >= amrapDuration) {
+            clearInterval(workoutInterval);
+            document.getElementById('workoutClock').innerText = "AMRAP Done!";
+            document.getElementById('end').play();
+          }
+        }
+      }, 1000);
     }
   </script>
 </body>
