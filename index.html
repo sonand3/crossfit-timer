@@ -214,12 +214,10 @@
     </div>
   </div>
 
- <audio id="beep">
-  <source src="data:audio/mp3;base64,//uQxAAADgG…(lang base64-streng her)…" type="audio/mp3">
-</audio>
-<audio id="finishBeep">
-  <source src="data:audio/mp3;base64,//uQxAAADgG…(lang base64-streng her)…" type="audio/mp3">
-</audio>
+ <!-- Legg til lydfilene i HTML -->
+<audio id="beep" src="beep.mp3" preload="auto"></audio>
+<audio id="end" src="end.mp3" preload="auto"></audio>
+
 
 <!-- iOS Wake Lock workaround: skjult video -->
 <video id="wakelockVideo" playsinline muted loop style="display: none;">
