@@ -253,10 +253,6 @@
       }
     }
 
-    window.onload = function() {
-      requestWakeLock();
-    };
-
     function selectMode(mode) {
       currentMode = mode;
       document.getElementById('mainMenu').classList.remove('active');
@@ -295,7 +291,11 @@
     function toggleStartPause() {
       const button = document.getElementById('startPauseButton');
 
+      // Aktivere wake lock ved start
       if (button.innerText === 'Start' || button.innerText === 'Fortsett') {
+        // Første gang vi starter, ber om wake lock
+        requestWakeLock();
+
         isPaused = false;
         button.innerText = 'Pause';
         countdown = parseInt(document.getElementById('countdownInput').value) || 10;
