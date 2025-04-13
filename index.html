@@ -238,9 +238,11 @@
           wakeLock.addEventListener('release', () => {
             console.log('Wake Lock sluppet');
           });
+
           document.addEventListener('visibilitychange', async () => {
             if (wakeLock !== null && document.visibilityState === 'visible') {
               wakeLock = await navigator.wakeLock.request('screen');
+              console.log('Wake Lock reaktivert');
             }
           });
         } else {
@@ -339,82 +341,24 @@
             document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
           }
         }, 1000);
-      } else if (currentMode === 'amrap') {
-        const minutes = parseInt(document.getElementById('minutes').value) || 15;
-        let totalSeconds = minutes * 60;
-        workoutSeconds = totalSeconds;
-        document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
-
-        workoutInterval = setInterval(() => {
-          if (!isPaused) {
-            workoutSeconds--;
-            document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
-
-            if (workoutSeconds <= 3 && workoutSeconds > 0) {
-              document.getElementById('beep').play();
-            }
-
-            if (workoutSeconds <= 0) {
-              clearInterval(workoutInterval);
-              document.getElementById('end').play();
-            }
-          }
-        }, 1000);
-      } else if (currentMode === 'emom') {
-        const workTime = parseInt(document.getElementById('workTime').value) || 40;
-        const restTime = parseInt(document.getElementById('restTime').value) || 20;
-        const rounds = parseInt(document.getElementById('emomRounds').value) || 5;
-        let currentRound = 1;
-        let timeLeft = workTime;
-        let isWork = true;
-
-        document.getElementById('roundInfo').innerText = `Runde: ${currentRound} / ${rounds}`;
-        document.getElementById('workoutClock').innerText = formatTime(timeLeft);
-
-        workoutInterval = setInterval(() => {
-          if (!isPaused) {
-            timeLeft--;
-            document.getElementById('workoutClock').innerText = formatTime(timeLeft);
-
-            if (isWork && timeLeft <= 0) {
-              isWork = false;
-              timeLeft = restTime;
-              document.getElementById('roundInfo').innerText = `Hvile - Runde: ${currentRound} / ${rounds}`;
-              document.getElementById('beep').play();
-            } else if (!isWork && timeLeft <= 0) {
-              isWork = true;
-              currentRound++;
-
-              if (currentRound <= rounds) {
-                timeLeft = workTime;
-                document.getElementById('roundInfo').innerText = `Runde: ${currentRound} / ${rounds}`;
-              } else {
-                clearInterval(workoutInterval);
-                document.getElementById('end').play();
-              }
-            }
-          }
-        }, 1000);
       }
     }
 
     function resetTimer() {
+      isPaused = true;
       clearInterval(interval);
       clearInterval(workoutInterval);
-      document.getElementById('timer').style.display = 'block';
-      document.getElementById('workoutClock').style.display = 'none';
+      document.getElementById('timer').style.color = 'red';
+      document.getElementById('timer').innerText = '00:00';
       document.getElementById('workoutClock').innerText = '';
-      document.getElementById('roundInfo').innerText = '';
+      document.getElementById('workoutClock').style.display = 'none';
+      document.getElementById('timer').style.display = 'block';
       document.getElementById('startPauseButton').innerText = 'Start';
-      isPaused = false;
-      countdown = 10;
-      document.getElementById('timer').innerText = formatTime(countdown);
     }
 
     function goBack() {
-      document.getElementById('mainMenu').classList.add('active');
       document.getElementById('timerApp').classList.remove('active');
-      resetTimer();
+      document.getElementById('mainMenu').classList.add('active');
     }
   </script>
 </body>
