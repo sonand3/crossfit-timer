@@ -249,6 +249,7 @@
           console.log("Wake Lock API ikke støttet, prøver iOS workaround");
           const video = document.getElementById('wakelockVideo');
           if (video) {
+            video.style.display = 'block'; // Ensure video is visible
             video.play().then(() => {
               console.log("iOS workaround aktivert med video");
             }).catch(err => {
@@ -263,10 +264,6 @@
 
     window.onload = function() {
       requestWakeLock();
-      var wakelockVideo = document.getElementById('wakelockVideo');
-      wakelockVideo.play().catch(function(error) {
-        console.error("Kunne ikke starte videoen:", error);
-      });
     };
 
     function selectMode(mode) {
