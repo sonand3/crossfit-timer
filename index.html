@@ -217,7 +217,7 @@
   <audio id="beep" src="beep.mp3" preload="auto"></audio>
   <audio id="end" src="end.mp3" preload="auto"></audio>
 
-  <video id="wakelockVideo" playsinline muted loop style="display: none;">
+  <video id="wakelockVideo" playsinline muted loop autoplay style="width:1px; height:1px; opacity:0; position:absolute; top:0; left:0;">
     <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
   </video>
 
@@ -246,16 +246,7 @@
             }
           });
         } else {
-          console.log("Wake Lock API ikke støttet, prøver iOS workaround");
-          const video = document.getElementById('wakelockVideo');
-          if (video) {
-            video.style.display = 'block'; // Ensure video is visible
-            video.play().then(() => {
-              console.log("iOS workaround aktivert med video");
-            }).catch(err => {
-              console.error("Kunne ikke starte video:", err);
-            });
-          }
+          console.log("Wake Lock API ikke støttet");
         }
       } catch (err) {
         console.error(`${err.name}, ${err.message}`);
@@ -279,6 +270,16 @@
       document.getElementById('emomSettings').style.display = mode === 'emom' ? 'block' : 'none';
       if (mode === 'fortime') {
         document.getElementById('settingsInputs').style.display = 'none';
+      }
+
+      // iOS video workaround starter her
+      const video = document.getElementById('wakelockVideo');
+      if (video) {
+        video.play().then(() => {
+          console.log("iOS workaround aktivert med video etter brukerklikk");
+        }).catch(err => {
+          console.error("Kunne ikke starte video:", err);
+        });
       }
     }
 
