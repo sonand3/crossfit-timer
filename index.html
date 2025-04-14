@@ -339,7 +339,11 @@ if (countdown === 0) {
     }, 1000);
   }
 
-function startEMOMTimer() {
+  function startEMOMTimer() {
+    // Skjul hovedtimeren og vis workout-klokken
+    document.getElementById('timer').style.display = 'none';
+    document.getElementById('workoutClock').style.display = 'block';
+
     emomRounds = parseInt(document.getElementById('emomRounds').value) || 5;
     workTimeLeft = parseInt(document.getElementById('workTime').value) || 60;
     restTimeLeft = parseInt(document.getElementById('restTime').value) || 0;
