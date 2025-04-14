@@ -229,10 +229,12 @@
   let isPaused = false;
   let workoutSeconds = 0;
   let wakeLock = null;
-  let emomRounds = 5;
-  let emomWorkTime = 40;
-  let emomRestTime = 20;
-  let emomRoundCounter = 0;
+let emomIsResting = false;
+let workTimeLeft = 0;
+let restTimeLeft = 0;
+let workInterval;
+let restInterval;
+
 
   function selectMode(mode) {
     currentMode = mode;
@@ -278,9 +280,14 @@
           countdown--;
           document.getElementById('timer').innerText = formatTime(countdown);
 
-          if (countdown <= 3 && countdown > 0) {
-            document.getElementById('beep').play();
-          }
+        if (countdown <= 3 && countdown > 0) {
+  document.getElementById('beep').play(); // spiller beep på 3, 2, 1
+}
+
+if (countdown === 0) {
+  document.getElementById('end').play(); // spiller end-lyd på 0
+}
+
 
           if (countdown <= 0) {
             clearInterval(interval);
@@ -332,48 +339,62 @@
     }, 1000);
   }
 
-  function startEMOMTimer() {
-    emomRounds = parseInt(document.getElementById('emomRounds').value) || 5;
-    emomWorkTime = parseInt(document.getElementById('workTime').value) || 40;
-    emomRestTime = parseInt(document.getElementById('restTime').value) || 20;
-    emomRoundCounter = 0;
-    let phase = 'work';
-    let seconds = 0;
+ function startEMOMTimer() {
+  emomRounds = parseInt(document.getElementById('emomRounds').value) || 5;
+  emomWorkTime = parseInt(document.getElementById('workTime').value) || 40;
+  emomRestTime = parseInt(document.getElementById('restTime').value) || 20;
+  emomRoundCounter = 0;
+  emomIsResting = false;
 
-    function runPhase() {
-      if (emomRoundCounter >= emomRounds) {
-        document.getElementById('timer').innerText = 'EMOM Done!';
-        document.getElementById('end').play();
-        return;
-      }
+  workTimeLeft = emomWorkTime;
+  restTimeLeft = emomRestTime;
 
-      let limit = phase === 'work' ? emomWorkTime : emomRestTime;
-      seconds = 0;
-      document.getElementById('timer').innerText = formatTime(seconds);
+  runEMOMCycle();
+}
 
-      workoutInterval = setInterval(() => {
-        if (!isPaused) {
-          seconds++;
-          document.getElementById('timer').innerText = formatTime(seconds);
-          if (seconds >= limit) {
-            clearInterval(workoutInterval);
-            document.getElementById('beep').play();
-
-            if (phase === 'work') {
-              phase = 'rest';
-              runPhase();
-            } else {
-              phase = 'work';
-              emomRoundCounter++;
-              runPhase();
-            }
-          }
-        }
-      }, 1000);
-    }
-
-    runPhase();
+function runEMOMCycle() {
+  if (emomRoundCounter >= emomRounds) {
+    document.getElementById('workoutClock').innerText = 'EMOM Done!';
+    document.getElementById('end').play();
+    return;
   }
+
+  if (!emomIsResting) {
+    document.getElementById('workoutClock').innerText = formatTime(workTimeLeft);
+    workInterval = setInterval(() => {
+      if (!isPaused) {
+        workTimeLeft--;
+        document.getElementById('workoutClock').innerText = formatTime(workTimeLeft);
+
+        if (workTimeLeft <= 0) {
+          clearInterval(workInterval);
+          document.getElementById('beep').play();
+          emomIsResting = true;
+          restTimeLeft = emomRestTime;
+          runEMOMCycle();
+        }
+      }
+    }, 1000);
+  } else {
+    document.getElementById('workoutClock').innerText = formatTime(restTimeLeft);
+    restInterval = setInterval(() => {
+      if (!isPaused) {
+        restTimeLeft--;
+        document.getElementById('workoutClock').innerText = formatTime(restTimeLeft);
+
+        if (restTimeLeft <= 0) {
+          clearInterval(restInterval);
+          document.getElementById('beep').play();
+          emomRoundCounter++;
+          emomIsResting = false;
+          workTimeLeft = emomWorkTime;
+          runEMOMCycle();
+        }
+      }
+    }, 1000);
+  }
+}
+
 
   function resetTimer() {
     clearInterval(interval);
