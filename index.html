@@ -340,94 +340,67 @@ if (countdown === 0) {
   }
 
 function startEMOMTimer() {
-  emomRounds = parseInt(document.getElementById('emomRounds').value) || 5;
-  emomWorkTime = parseInt(document.getElementById('workTime').value) || 40;
-  emomRestTime = parseInt(document.getElementById('restTime').value) || 20;
-  emomRoundCounter = 0;
-  emomIsResting = false;
-
-  workTimeLeft = emomWorkTime;
-  restTimeLeft = emomRestTime;
-
-  document.getElementById('workoutClock').style.display = 'block'; // Vis EMOM-klokken
-  runEMOMCycle(); // Start EMOM-syklusen
-}
-
-function runEMOMCycle() {
-  if (emomRoundCounter >= emomRounds) {
-    document.getElementById('workoutClock').innerText = 'EMOM Done!';
-    document.getElementById('end').play();
-    return;
+    emomRounds = parseInt(document.getElementById('emomRounds').value) || 5;
+    workTimeLeft = parseInt(document.getElementById('workTime').value) || 60;
+    restTimeLeft = parseInt(document.getElementById('restTime').value) || 0;
+    roundCount = 1;  // Reset round count
+    document.getElementById('roundInfo').innerText = `Round ${roundCount} of ${emomRounds}`;
+    emomIsResting = false;
+    runEMOMCycle();
   }
 
-  // Arbeidstid
-  if (!emomIsResting) {
-    document.getElementById('workoutClock').innerText = formatTime(workTimeLeft);
-    workInterval = setInterval(() => {
-      if (!isPaused) {
-        workTimeLeft--;
-        document.getElementById('workoutClock').innerText = formatTime(workTimeLeft);
+  function runEMOMCycle() {
+    if (emomIsResting) {
+      document.getElementById('workoutClock').innerText = `Rest: ${formatTime(restTimeLeft)}`;
+      restTimeLeft--;
 
-        if (workTimeLeft <= 0) {
-          clearInterval(workInterval);
-          document.getElementById('beep').play(); // Beep på slutten av arbeidstid
-          emomIsResting = true; // Bytt til hvile
-          restTimeLeft = emomRestTime;
-          runEMOMCycle(); // Start hviletid
+      if (restTimeLeft < 0) {
+        emomIsResting = false;
+        workTimeLeft = parseInt(document.getElementById('workTime').value) || 60;
+        document.getElementById('workoutClock').innerText = `Work: ${formatTime(workTimeLeft)}`;
+        runEMOMCycle();  // Start the work cycle again
+      }
+    } else {
+      document.getElementById('workoutClock').innerText = `Work: ${formatTime(workTimeLeft)}`;
+      workTimeLeft--;
+
+      if (workTimeLeft <= 0) {
+        emomIsResting = true;
+        roundCount++;
+        if (roundCount > emomRounds) {
+          document.getElementById('workoutClock').innerText = 'EMOM Finished!';
+          document.getElementById('end').play();
+          clearInterval(workoutInterval);
+        } else {
+          document.getElementById('roundInfo').innerText = `Round ${roundCount} of ${emomRounds}`;
+          runEMOMCycle();  // Move to rest cycle
         }
       }
-    }, 1000);
-  } else { // Hvile
-    document.getElementById('workoutClock').innerText = formatTime(restTimeLeft);
-    restInterval = setInterval(() => {
-      if (!isPaused) {
-        restTimeLeft--;
-        document.getElementById('workoutClock').innerText = formatTime(restTimeLeft);
-
-        if (restTimeLeft <= 0) {
-          clearInterval(restInterval);
-          document.getElementById('beep').play(); // Beep på slutten av hvile
-          emomRoundCounter++; // Øk runde-teller
-          emomIsResting = false; // Bytt tilbake til arbeid
-          workTimeLeft = emomWorkTime;
-          runEMOMCycle(); // Start ny arbeidstid
-        }
-      }
-    }, 1000);
+    }
   }
-}
 
   function resetTimer() {
     clearInterval(interval);
     clearInterval(workoutInterval);
-    document.getElementById('timer').innerText = '00:00';
-    document.getElementById('workoutClock').innerText = '';
     isPaused = false;
     document.getElementById('startPauseButton').innerText = 'Start';
-    document.getElementById('timer').style.color = 'red';
+    document.getElementById('timer').innerText = '00:00';
+    document.getElementById('workoutClock').innerText = '';
   }
 
   function goBack() {
-    document.getElementById('timerApp').classList.remove('active');
     document.getElementById('mainMenu').classList.add('active');
+    document.getElementById('timerApp').classList.remove('active');
     resetTimer();
   }
 
-  async function requestWakeLock() {
-    try {
-      if ('wakeLock' in navigator) {
-        wakeLock = await navigator.wakeLock.request('screen');
-        wakeLock.addEventListener('release', () => {
-          console.log('Wake Lock sluppet');
-        });
-        document.addEventListener('visibilitychange', async () => {
-          if (wakeLock !== null && document.visibilityState === 'visible') {
-            wakeLock = await navigator.wakeLock.request('screen');
-          }
-        });
-      }
-    } catch (err) {
-      console.error(`${err.name}, ${err.message}`);
+  function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen').then(lock => {
+        wakeLock = lock;
+      }).catch(err => {
+        console.error("Wake Lock Request Failed: ", err);
+      });
     }
   }
   </script>
