@@ -339,7 +339,7 @@ if (countdown === 0) {
     }, 1000);
   }
 
- function startEMOMTimer() {
+function startEMOMTimer() {
   emomRounds = parseInt(document.getElementById('emomRounds').value) || 5;
   emomWorkTime = parseInt(document.getElementById('workTime').value) || 40;
   emomRestTime = parseInt(document.getElementById('restTime').value) || 20;
@@ -349,7 +349,8 @@ if (countdown === 0) {
   workTimeLeft = emomWorkTime;
   restTimeLeft = emomRestTime;
 
-  runEMOMCycle();
+  document.getElementById('workoutClock').style.display = 'block'; // Vis EMOM-klokken
+  runEMOMCycle(); // Start EMOM-syklusen
 }
 
 function runEMOMCycle() {
@@ -359,6 +360,7 @@ function runEMOMCycle() {
     return;
   }
 
+  // Arbeidstid
   if (!emomIsResting) {
     document.getElementById('workoutClock').innerText = formatTime(workTimeLeft);
     workInterval = setInterval(() => {
@@ -368,14 +370,14 @@ function runEMOMCycle() {
 
         if (workTimeLeft <= 0) {
           clearInterval(workInterval);
-          document.getElementById('beep').play();
-          emomIsResting = true;
+          document.getElementById('beep').play(); // Beep på slutten av arbeidstid
+          emomIsResting = true; // Bytt til hvile
           restTimeLeft = emomRestTime;
-          runEMOMCycle();
+          runEMOMCycle(); // Start hviletid
         }
       }
     }, 1000);
-  } else {
+  } else { // Hvile
     document.getElementById('workoutClock').innerText = formatTime(restTimeLeft);
     restInterval = setInterval(() => {
       if (!isPaused) {
@@ -384,17 +386,16 @@ function runEMOMCycle() {
 
         if (restTimeLeft <= 0) {
           clearInterval(restInterval);
-          document.getElementById('beep').play();
-          emomRoundCounter++;
-          emomIsResting = false;
+          document.getElementById('beep').play(); // Beep på slutten av hvile
+          emomRoundCounter++; // Øk runde-teller
+          emomIsResting = false; // Bytt tilbake til arbeid
           workTimeLeft = emomWorkTime;
-          runEMOMCycle();
+          runEMOMCycle(); // Start ny arbeidstid
         }
       }
     }, 1000);
   }
 }
-
 
   function resetTimer() {
     clearInterval(interval);
