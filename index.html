@@ -171,7 +171,7 @@
   <div class="menu active" id="mainMenu">
     <h1>CrossFit Timer</h1>
     <div class="input-group">
-      <label for="countdownInput">Nedtelling (sekunder)</label>
+      <label for="countdownInput">Countdown</label>
       <input type="number" id="countdownInput" value="10" min="0" placeholder="10" />
     </div>
     <button class="mode-button" onclick="selectMode('fortime')">For Time</button>
@@ -193,15 +193,15 @@
       </div>
       <div id="emomSettings" style="display: none;">
         <div class="input-group">
-          <label for="workTime">Arbeid</label>
-          <input type="number" id="workTime" value="40" min="1" placeholder="Sekunder" />
+          <label for="workTime">Work</label>
+          <input type="number" id="workTime" value="60" min="1" placeholder="Sekunder" />
         </div>
         <div class="input-group">
-          <label for="restTime">Hvile</label>
-          <input type="number" id="restTime" value="20" min="1" placeholder="Sekunder" />
+          <label for="restTime">Rest</label>
+          <input type="number" id="restTime" value="0" min="1" placeholder="Sekunder" />
         </div>
         <div class="input-group">
-          <label for="emomRounds">Runder</label>
+          <label for="emomRounds">Rounds</label>
           <input type="number" id="emomRounds" value="5" min="1" placeholder="Antall" />
         </div>
       </div>
@@ -210,7 +210,7 @@
     <div class="controls">
       <button class="control" onclick="toggleStartPause()" id="startPauseButton">Start</button>
       <button class="control" onclick="resetTimer()">Reset</button>
-      <button class="control" onclick="goBack()">Tilbake</button>
+      <button class="control" onclick="goBack()">Back</button>
     </div>
   </div>
 
@@ -222,188 +222,192 @@
   </video>
 
   <script>
-    let currentMode = '';
-    let interval;
-    let workoutInterval;
-    let countdown = 10;
-    let isPaused = false;
-    let workoutSeconds = 0;
-    let wakeLock = null;
-    let emomRounds = 5;
-    let emomWorkTime = 40;
-    let emomRestTime = 20;
-    let emomRoundCounter = 0;
+  let currentMode = '';
+  let interval;
+  let workoutInterval;
+  let countdown = 10;
+  let isPaused = false;
+  let workoutSeconds = 0;
+  let wakeLock = null;
+  let emomRounds = 5;
+  let emomWorkTime = 40;
+  let emomRestTime = 20;
+  let emomRoundCounter = 0;
 
-    async function requestWakeLock() {
-      try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen');
-          console.log("Wake Lock aktivert med API");
-          wakeLock.addEventListener('release', () => {
-            console.log('Wake Lock sluppet');
-          });
+  function selectMode(mode) {
+    currentMode = mode;
+    document.getElementById('mainMenu').classList.remove('active');
+    document.getElementById('timerApp').classList.add('active');
+    document.getElementById('timer').innerText = '00:00';
+    document.getElementById('timer').style.color = 'red';
+    document.getElementById('workoutClock').innerText = '';
 
-          document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-              wakeLock = await navigator.wakeLock.request('screen');
-              console.log('Wake Lock reaktivert');
-            }
-          });
-        } else {
-          console.log("Wake Lock API ikke støttet");
-        }
-      } catch (err) {
-        console.error(`${err.name}, ${err.message}`);
-      }
+    document.getElementById('settingsInputs').style.display = 'flex';
+    document.getElementById('amrapSettings').style.display = mode === 'amrap' ? 'block' : 'none';
+    document.getElementById('emomSettings').style.display = mode === 'emom' ? 'block' : 'none';
+    if (mode === 'fortime') {
+      document.getElementById('settingsInputs').style.display = 'none';
     }
 
-    function selectMode(mode) {
-      currentMode = mode;
-      document.getElementById('mainMenu').classList.remove('active');
-      document.getElementById('timerApp').classList.add('active');
-      document.getElementById('timer').innerText = '00:00';
+    const video = document.getElementById('wakelockVideo');
+    if (video) {
+      video.play().catch(err => console.error("Kunne ikke starte video:", err));
+    }
+  }
+
+  function formatTime(seconds) {
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  }
+
+  function toggleStartPause() {
+    const button = document.getElementById('startPauseButton');
+
+    if (button.innerText === 'Start' || button.innerText === 'Fortsett') {
+      requestWakeLock();
+
+      isPaused = false;
+      button.innerText = 'Pause';
+      countdown = parseInt(document.getElementById('countdownInput').value) || 10;
       document.getElementById('timer').style.color = 'red';
-      document.getElementById('workoutClock').innerText = '';
+      document.getElementById('timer').innerText = formatTime(countdown);
 
-      document.getElementById('settingsInputs').style.display = 'flex';
-      document.getElementById('amrapSettings').style.display = mode === 'amrap' ? 'block' : 'none';
-      document.getElementById('emomSettings').style.display = mode === 'emom' ? 'block' : 'none';
-      if (mode === 'fortime') {
-        document.getElementById('settingsInputs').style.display = 'none';
-      }
+      interval = setInterval(() => {
+        if (!isPaused) {
+          countdown--;
+          document.getElementById('timer').innerText = formatTime(countdown);
 
-      const video = document.getElementById('wakelockVideo');
-      if (video) {
-        video.play().then(() => {
-          console.log("iOS workaround aktivert med video etter brukerklikk");
-        }).catch(err => {
-          console.error("Kunne ikke starte video:", err);
-        });
-      }
-    }
+          if (countdown <= 3 && countdown > 0) {
+            document.getElementById('beep').play();
+          }
 
-    function formatTime(seconds) {
-      const hrs = Math.floor(seconds / 3600);
-      const min = Math.floor((seconds % 3600) / 60);
-      const sec = seconds % 60;
-      return hrs > 0
-        ? `${String(hrs).padStart(2, '0')}:${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
-        : `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-    }
-
-    function toggleStartPause() {
-      const button = document.getElementById('startPauseButton');
-
-      if (button.innerText === 'Start' || button.innerText === 'Fortsett') {
-        requestWakeLock();
-
-        isPaused = false;
-        button.innerText = 'Pause';
-        countdown = parseInt(document.getElementById('countdownInput').value) || 10;
-        document.getElementById('timer').style.color = 'red';
-        document.getElementById('timer').innerText = formatTime(countdown);
-
-        interval = setInterval(() => {
-          if (!isPaused) {
-            countdown--;
-            document.getElementById('timer').innerText = formatTime(countdown);
-
-            if (countdown <= 3 && countdown > 0) {
-              document.getElementById('beep').play();
-            }
-
-            if (countdown <= 0) {
-              clearInterval(interval);
-              document.getElementById('beep').play();
-              if (currentMode === 'amrap') {
-                startAMRAPTimer();
-              } else if (currentMode === 'emom') {
-                startEMOMTimer();
-              }
+          if (countdown <= 0) {
+            clearInterval(interval);
+            document.getElementById('beep').play();
+            document.getElementById('timer').style.color = '#00ff99'; // grønn etter nedtelling
+            if (currentMode === 'fortime') {
+              startForTimeTimer();
+            } else if (currentMode === 'amrap') {
+              startAMRAPTimer();
+            } else if (currentMode === 'emom') {
+              startEMOMTimer();
             }
           }
-        }, 1000);
-      } else {
-        isPaused = true;
-        button.innerText = 'Fortsett';
+        }
+      }, 1000);
+    } else {
+      isPaused = true;
+      button.innerText = 'Fortsett';
+    }
+  }
+
+  function startForTimeTimer() {
+    workoutSeconds = 0;
+    document.getElementById('timer').innerText = formatTime(workoutSeconds);
+    workoutInterval = setInterval(() => {
+      if (!isPaused) {
+        workoutSeconds++;
+        document.getElementById('timer').innerText = formatTime(workoutSeconds);
       }
-    }
+    }, 1000);
+  }
 
-    function resetTimer() {
-      clearInterval(interval);
-      clearInterval(workoutInterval);
-      document.getElementById('timer').innerText = '00:00';
-      document.getElementById('workoutClock').innerText = '';
-      isPaused = false;
-      document.getElementById('startPauseButton').innerText = 'Start';
-    }
+  function startAMRAPTimer() {
+    let amrapMinutes = parseInt(document.getElementById('minutes').value) || 15;
+    let amrapDuration = amrapMinutes * 60;
+    workoutSeconds = amrapDuration;
+    document.getElementById('timer').innerText = formatTime(workoutSeconds);
 
-    function goBack() {
-      document.getElementById('timerApp').classList.remove('active');
-      document.getElementById('mainMenu').classList.add('active');
-    }
+    workoutInterval = setInterval(() => {
+      if (!isPaused) {
+        workoutSeconds--;
+        document.getElementById('timer').innerText = formatTime(workoutSeconds);
+        if (workoutSeconds <= 0) {
+          clearInterval(workoutInterval);
+          document.getElementById('timer').innerText = "AMRAP Done!";
+          document.getElementById('end').play();
+        }
+      }
+    }, 1000);
+  }
 
-    function startAMRAPTimer() {
-      let amrapMinutes = parseInt(document.getElementById('minutes').value) || 15;
-      let amrapDuration = amrapMinutes * 60;
-      workoutSeconds = 0;
-      document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
+  function startEMOMTimer() {
+    emomRounds = parseInt(document.getElementById('emomRounds').value) || 5;
+    emomWorkTime = parseInt(document.getElementById('workTime').value) || 40;
+    emomRestTime = parseInt(document.getElementById('restTime').value) || 20;
+    emomRoundCounter = 0;
+    let phase = 'work';
+    let seconds = 0;
+
+    function runPhase() {
+      if (emomRoundCounter >= emomRounds) {
+        document.getElementById('timer').innerText = 'EMOM Done!';
+        document.getElementById('end').play();
+        return;
+      }
+
+      let limit = phase === 'work' ? emomWorkTime : emomRestTime;
+      seconds = 0;
+      document.getElementById('timer').innerText = formatTime(seconds);
 
       workoutInterval = setInterval(() => {
         if (!isPaused) {
-          workoutSeconds++;
-          document.getElementById('workoutClock').innerText = formatTime(workoutSeconds);
-
-          if (workoutSeconds >= amrapDuration) {
+          seconds++;
+          document.getElementById('timer').innerText = formatTime(seconds);
+          if (seconds >= limit) {
             clearInterval(workoutInterval);
-            document.getElementById('workoutClock').innerText = "AMRAP Done!";
-            document.getElementById('end').play();
+            document.getElementById('beep').play();
+
+            if (phase === 'work') {
+              phase = 'rest';
+              runPhase();
+            } else {
+              phase = 'work';
+              emomRoundCounter++;
+              runPhase();
+            }
           }
         }
       }, 1000);
     }
 
-    function startEMOMTimer() {
-      emomRounds = parseInt(document.getElementById('emomRounds').value) || 5;
-      emomWorkTime = parseInt(document.getElementById('workTime').value) || 40;
-      emomRestTime = parseInt(document.getElementById('restTime').value) || 20;
-      emomRoundCounter = 0;
+    runPhase();
+  }
 
-      function emomCycle() {
-        if (emomRoundCounter < emomRounds) {
-          // Arbeidstid
-          let workTimeLeft = emomWorkTime;
-          document.getElementById('workoutClock').innerText = formatTime(workTimeLeft);
-          
-          let workInterval = setInterval(() => {
-            workTimeLeft--;
-            document.getElementById('workoutClock').innerText = formatTime(workTimeLeft);
-            if (workTimeLeft <= 0) {
-              clearInterval(workInterval);
-              document.getElementById('beep').play();
-              // Hviletid
-              let restTimeLeft = emomRestTime;
-              let restInterval = setInterval(() => {
-                restTimeLeft--;
-                document.getElementById('workoutClock').innerText = formatTime(restTimeLeft);
-                if (restTimeLeft <= 0) {
-                  clearInterval(restInterval);
-                  emomRoundCounter++;
-                  if (emomRoundCounter >= emomRounds) {
-                    document.getElementById('workoutClock').innerText = 'EMOM Done!';
-                    document.getElementById('end').play();
-                    return;
-                  }
-                  emomCycle(); // Start neste runde
-                }
-              }, 1000);
-            }
-          }, 1000);
-        }
+  function resetTimer() {
+    clearInterval(interval);
+    clearInterval(workoutInterval);
+    document.getElementById('timer').innerText = '00:00';
+    document.getElementById('workoutClock').innerText = '';
+    isPaused = false;
+    document.getElementById('startPauseButton').innerText = 'Start';
+    document.getElementById('timer').style.color = 'red';
+  }
+
+  function goBack() {
+    document.getElementById('timerApp').classList.remove('active');
+    document.getElementById('mainMenu').classList.add('active');
+    resetTimer();
+  }
+
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => {
+          console.log('Wake Lock sluppet');
+        });
+        document.addEventListener('visibilitychange', async () => {
+          if (wakeLock !== null && document.visibilityState === 'visible') {
+            wakeLock = await navigator.wakeLock.request('screen');
+          }
+        });
       }
-
-      emomCycle();
+    } catch (err) {
+      console.error(`${err.name}, ${err.message}`);
     }
+  }
   </script>
 </body>
 </html>
